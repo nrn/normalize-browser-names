@@ -13,7 +13,8 @@ var names = {
     chrome : 'chrome',
     firefox : 'firefox',
     ff : 'firefox',
-    opera : 'opera'
+    opera : 'opera',
+    '*': [ 'chrome', 'firefox', 'opera', 'safari', 'iexplore' ]
 };
 
 /// normalize browser name from user input
@@ -61,41 +62,51 @@ module.exports = function normalize (browsers, supported) {
             var b = s[0], v = s[1];
             var end = s[3];
 
-            b = normalized_name(b);
+            var normb = normalized_name(b);
 
-            // if user wants latest stable version
-            if (v === 'latest') {
-                v = latest(supported[b]);
+            if (Array.isArray(normb)) {
+                normb.forEach(resolveV);
+            } else {
+                resolveV(normb);
             }
 
-            // no array yet, initialize empty
-            if (!acc[b]) acc[b] = [];
+            function resolveV (b) {
+                var version = v;
 
-            // user wanted a range of versions
-            if (s[2] === '..') {
-                var versions = numeric(supported[b]);
-
-                if (end === 'latest') {
-                    end = latest(versions);
+                // if user wants latest stable version
+                if (version === 'latest') {
+                    version = latest(supported[b]);
                 }
 
-                v = is_numeric(v) ? v - 0 : v;
-                end = is_numeric(end) ? end - 0 : end;
+                // no array yet, initialize empty
+                if (!acc[b]) acc[b] = [];
 
-                var start_idx = versions.indexOf(v);
-                var end_idx = versions.indexOf(end);
+                // user wanted a range of versions
+                if (s[2] === '..') {
+                    var versions = numeric(supported[b]);
 
-                if (end_idx < start_idx) {
-                    throw new Error('range must be increasing order');
+                    if (end === 'latest') {
+                        end = latest(versions);
+                    }
+
+                    version = is_numeric(version) ? version - 0 : version;
+                    end = is_numeric(end) ? end - 0 : end;
+
+                    var start_idx = versions.indexOf(version);
+                    var end_idx = versions.indexOf(end);
+
+                    if (end_idx < start_idx) {
+                        throw new Error('range must be increasing order');
+                    }
+                    else if (start_idx < 0 || end_idx < 0) {
+                        throw new Error('invalid range');
+                    }
+
+                    acc[b].push.apply(acc[b], versions.slice(start_idx, end_idx + 1));
                 }
-                else if (start_idx < 0 || end_idx < 0) {
-                    throw new Error('invalid range');
+                else if (version) {
+                    acc[b].push(version);
                 }
-
-                acc[b].push.apply(acc[b], versions.slice(start_idx, end_idx + 1));
-            }
-            else if (v) {
-                acc[b].push(v);
             }
 
             return acc;
@@ -107,17 +118,25 @@ module.exports = function normalize (browsers, supported) {
             ? browsers[key] : [ browsers[key] ]
         ;
         
-        var name = normalized_name(key);
-        
-        if (name) acc[name] = vs.map(function (v) {
-            if (v === 'latest') v = latest(supported[key]);
-            if (typeof v === 'number' || /^\d+(?:\.\d*)?/.test(v)) {
-                if (/\.$/.test(v)) return v + '0';
-                if (!/\./.test(v)) return v + '.0';
-                return String(v);
-            }
-            else return String(v)
-        });
+        var b = normalized_name(key);
+
+        if (Array.isArray(b)) {
+            b.forEach(resolveV);
+        } else {
+            resolveV(b);
+        }
+
+        function resolveV (name) {
+            if (!acc[name]) acc[name] = [];
+            if (name) acc[name] = acc[name].concat(vs.map(function (v) {
+                if (v === 'latest') v = latest(supported[name]);
+                if (typeof v === 'number' || /^\d+(?:\.\d*)?/.test(v)) {
+                    if (/\.$/.test(v)) return v + '0';
+                    if (!/\./.test(v)) return v + '.0';
+                    return String(v);
+                } else return String(v);
+            }));
+        }
         return acc;
     }, {});
 }

@@ -112,28 +112,28 @@ test('N..canary', function (t) {
     t.end();
 });
 
-//test('*', function (t) {
-//    var allLatest = Object.keys(browsers).reduce(function (prev, browser) {
-//            prev[browser] = normalize([ browser + '/latest' ], browsers)[browser];
-//            return prev;
-//        }, {});
-//
-//    t.same(
-//        normalize({'*': 'latest'}, browsers),
-//        allLatest
-//    );
-//
-//    t.same(
-//        normalize([ '*/latest' ], browsers),
-//        allLatest
-//    );
-//
-//    allLatest.chrome.push('canary');
-//
-//    t.same(
-//        normalize(['*/latest', 'chrome/canary'], browsers),
-//        allLatest
-//    );
-//
-//    t.end();
-//});
+test('*', function (t) {
+    var allLatest = Object.keys(browsers).reduce(function (prev, browser) {
+            prev[browser] = normalize([ browser + '/latest' ], browsers)[browser];
+            return prev;
+        }, {});
+
+    t.same(
+        normalize({'*': 'latest'}, browsers),
+        allLatest
+    );
+
+    t.same(
+        normalize([ '*/latest' ], browsers),
+        allLatest
+    );
+
+    allLatest.chrome.push('canary');
+
+    t.same(
+        normalize(['*/latest', 'chrome/canary'], browsers),
+        allLatest
+    );
+
+    t.end();
+});
